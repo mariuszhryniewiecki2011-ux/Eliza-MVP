@@ -356,7 +356,7 @@ export default function Home() {
               evidence-based mental health resources, mood tracking, guided activities, and an optional talking-face
               avatar for personalized support.
             </p>
-            <div className="mt-4 flex gap-3 flex-wrap">
+            <div className="mt-4 flex gap-3 flex-wrap justify-end">
               <button onClick={() => setOpenVideo(true)} className="rounded bg-purple-600 px-5 py-3 text-white">
                 Watch Demo Video
               </button>
