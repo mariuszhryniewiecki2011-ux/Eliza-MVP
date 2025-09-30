@@ -120,7 +120,7 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
 
     const resendClient = new Resend(process.env.RESEND_API_KEY)
 
-    const fromEmail = process.env.FROM_EMAIL || "onboarding@resend.dev"
+    const fromEmail = process.env.FROM_EMAIL || "admin@cloudsnsnets.com"
     console.log("[v0] Using from email:", fromEmail)
 
     const emailData = {
