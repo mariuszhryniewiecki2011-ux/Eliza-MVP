@@ -5,16 +5,11 @@ import { useState, useRef, useEffect } from "react"
 
 export default function Home() {
   const [openVideo, setOpenVideo] = useState(false)
-  const [signupStatus, setSignupStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [contactStatus, setContactStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [showGrokChat, setShowGrokChat] = useState(false)
   const [grokQuestion, setGrokQuestion] = useState("")
   const [grokResponse, setGrokResponse] = useState("")
   const [isGrokLoading, setIsGrokLoading] = useState(false)
-  const [showOTPVerification, setShowOTPVerification] = useState(false)
-  const [pendingSignup, setPendingSignup] = useState<{ name: string; email: string } | null>(null)
-  const [otpCode, setOtpCode] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [showTherapyAppsModal, setShowTherapyAppsModal] = useState(false)
 
   const chatTextareaRef = useRef<HTMLTextAreaElement>(null)
@@ -24,114 +19,6 @@ export default function Home() {
       chatTextareaRef.current.focus()
     }
   }, [showGrokChat])
-
-  const handleSignupSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (isSubmitting) return
-
-    const formData = new FormData(e.currentTarget)
-    const data = {
-      name: formData.get("name") as string,
-      email: formData.get("email") as string,
-    }
-
-    setIsSubmitting(true)
-    setSignupStatus(null)
-
-    try {
-      const response = await fetch("/api/send-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      })
-
-      const result = await response.json()
-
-      if (response.ok) {
-        setPendingSignup(data)
-        setShowOTPVerification(true)
-        setSignupStatus({ type: "success", message: result.message })
-        e.currentTarget.reset()
-      } else {
-        setSignupStatus({ type: "error", message: result.error })
-      }
-    } catch (error) {
-      console.error("Signup error:", error)
-      setSignupStatus({ type: "error", message: "Network error. Please try again." })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleOTPVerification = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!pendingSignup || isSubmitting) return
-
-    setIsSubmitting(true)
-    setSignupStatus(null)
-
-    try {
-      const response = await fetch("/api/verify-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: pendingSignup.name,
-          email: pendingSignup.email,
-          otp: otpCode,
-        }),
-      })
-
-      const result = await response.json()
-
-      if (response.ok) {
-        setSignupStatus({ type: "success", message: result.message })
-        setShowOTPVerification(false)
-        setPendingSignup(null)
-        setOtpCode("")
-      } else {
-        setSignupStatus({ type: "error", message: result.error })
-      }
-    } catch (error) {
-      console.error("OTP verification error:", error)
-      setSignupStatus({ type: "error", message: "Network error. Please try again." })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleResendOTP = async () => {
-    if (!pendingSignup || isSubmitting) return
-
-    setIsSubmitting(true)
-    setSignupStatus(null)
-
-    try {
-      const response = await fetch("/api/send-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(pendingSignup),
-      })
-
-      const result = await response.json()
-
-      if (response.ok) {
-        setSignupStatus({ type: "success", message: "New verification code sent!" })
-      } else {
-        setSignupStatus({ type: "error", message: result.error })
-      }
-    } catch (error) {
-      console.error("Resend OTP error:", error)
-      setSignupStatus({ type: "error", message: "Network error. Please try again." })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -256,9 +143,6 @@ export default function Home() {
             >
               Ask Eliza
             </button>
-            <a href="#signup" className="rounded bg-purple-600 px-3 py-1.5 text-white">
-              Sign Up
-            </a>
           </nav>
         </div>
       </header>
@@ -681,7 +565,7 @@ export default function Home() {
                   name: "How do I get early access?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Use the Sign Up form below to join the early-access list, or email cloudsns@outlook.com.",
+                    text: "Use the Contact form below to express your interest in early access, or email cloudsns@outlook.com.",
                   },
                 },
               ],
@@ -768,7 +652,7 @@ export default function Home() {
         <details className="mt-3 border rounded-lg p-4">
           <summary className="cursor-pointer font-medium">How do I get early access?</summary>
           <p className="mt-2 text-neutral-700">
-            Use the Sign Up form below to join the early-access list, or email cloudsns@outlook.com.
+            Use the Contact form below to express your interest in early access, or email cloudsns@outlook.com.
           </p>
         </details>
         <details className="mt-3 border rounded-lg p-4">
@@ -821,105 +705,6 @@ export default function Home() {
             sense of meaning. What's been on your mind lately that sparked this question?
           </p>
         </details>
-      </section>
-
-      {/* SIGN UP */}
-      <section id="signup" className="bg-neutral-50 border-y">
-        <div className="mx-auto max-w-6xl px-4 py-16">
-          <h2 className="text-3xl font-bold mb-6">Join the Eliza AI Early-Access List</h2>
-
-          {showOTPVerification && pendingSignup ? (
-            <div className="mt-6 max-w-md">
-              <p className="text-neutral-700 mb-4">
-                We've sent a verification code to <strong>{pendingSignup.email}</strong>
-              </p>
-              <form onSubmit={handleOTPVerification} className="space-y-4">
-                <div>
-                  <label htmlFor="otp" className="block text-sm font-medium text-neutral-700 mb-2">
-                    Enter 6-digit verification code
-                  </label>
-                  <input
-                    id="otp"
-                    type="text"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="123456"
-                    className="border rounded px-3 py-3 w-full text-center text-lg font-mono tracking-widest"
-                    maxLength={6}
-                    required
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={otpCode.length !== 6 || isSubmitting}
-                    className="rounded bg-purple-600 px-5 py-3 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? "Verifying..." : "Verify Email"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleResendOTP}
-                    disabled={isSubmitting}
-                    className="rounded border border-purple-600 px-5 py-3 text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? "Sending..." : "Resend Code"}
-                  </button>
-                </div>
-              </form>
-              <button
-                onClick={() => {
-                  setShowOTPVerification(false)
-                  setPendingSignup(null)
-                  setOtpCode("")
-                  setSignupStatus(null)
-                }}
-                className="mt-3 text-sm text-neutral-600 hover:text-neutral-800"
-              >
-                ← Back to signup form
-              </button>
-            </div>
-          ) : (
-            <form className="mt-6 grid md:grid-cols-3 gap-4" onSubmit={handleSignupSubmit}>
-              <input
-                name="name"
-                required
-                placeholder="Name"
-                className="border rounded px-3 py-3"
-                disabled={isSubmitting}
-              />
-              <input
-                name="email"
-                type="email"
-                required
-                placeholder="Email"
-                className="border rounded px-3 py-3"
-                disabled={isSubmitting}
-              />
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="rounded bg-purple-600 px-5 py-3 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? "Sending..." : "Sign Up Now"}
-              </button>
-            </form>
-          )}
-
-          {signupStatus && (
-            <div
-              className={`mt-3 p-3 rounded ${signupStatus.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
-            >
-              {signupStatus.message}
-            </div>
-          )}
-          <p className="mt-3 text-sm text-neutral-600">
-            {showOTPVerification
-              ? "Check your email for the verification code. It may take a few minutes to arrive."
-              : "We'll email you when Eliza AI is ready. Unsubscribe anytime."}
-          </p>
-        </div>
       </section>
 
       {/* CONTACT */}
