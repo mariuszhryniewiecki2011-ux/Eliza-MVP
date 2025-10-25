@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const result = streamText({
-        model: xai("grok-beta", {
+        model: xai("grok-4-fast-reasoning", {
           apiKey: process.env.XAI_API_KEY,
         }),
         prompt: prompt,
