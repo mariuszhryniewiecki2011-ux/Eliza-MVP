@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
       const result = streamText({
         model: xai("grok-4-fast-reasoning", {
           apiKey: process.env.XAI_API_KEY,
+          search_parameters: {
+            mode: "auto", // Let Grok decide when to search the web
+          },
         }),
         prompt: prompt,
         system: `You are Eliza, an AI-powered companion for everyday mental well-being. You provide empathic dialogue, evidence-based resources, and supportive guidance. 
