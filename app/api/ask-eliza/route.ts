@@ -17,13 +17,26 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] Prompt received:", prompt)
+
+    if (!process.env.XAI_API_KEY) {
+      return new Response(
+        JSON.stringify({
+          error: "API configuration error. Please contact support.",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    }
+
     console.log("[v0] XAI_API_KEY exists:", !!process.env.XAI_API_KEY)
     console.log("[v0] XAI_API_KEY length:", process.env.XAI_API_KEY?.length || 0)
 
-    console.log("[v0] Calling streamText with grok-4 model")
+    console.log("[v0] Calling streamText with grok-beta model")
 
     const result = streamText({
-      model: xai("grok-4", {
+      model: xai("grok-beta", {
         apiKey: process.env.XAI_API_KEY,
       }),
       prompt: prompt,
@@ -77,6 +90,20 @@ Keep responses concise, helpful, and encouraging.`,
     console.error("[v0] Error name:", error instanceof Error ? error.name : "Unknown")
     console.error("[v0] Error message:", error instanceof Error ? error.message : "Unknown error")
     console.error("[v0] Error stack:", error instanceof Error ? error.stack : "No stack trace")
+
+    if (error instanceof Error && error.message.includes("429")) {
+      return new Response(
+        JSON.stringify({
+          error: "Service temporarily unavailable",
+          message:
+            "I'm experiencing high demand right now. Please try again in a few moments, or contact cloudsns@outlook.com for assistance.",
+        }),
+        {
+          status: 429,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    }
 
     return new Response(
       JSON.stringify({

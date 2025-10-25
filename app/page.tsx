@@ -75,14 +75,10 @@ export default function Home() {
     e.preventDefault()
     if (!grokQuestion.trim()) return
 
-    console.log("[v0] Grok submit started")
-    console.log("[v0] Question:", grokQuestion)
-
     setIsGrokLoading(true)
     setGrokResponse("")
 
     try {
-      console.log("[v0] Making fetch request to /api/ask-eliza")
       const res = await fetch("/api/ask-eliza", {
         method: "POST",
         headers: {
@@ -91,57 +87,44 @@ export default function Home() {
         body: JSON.stringify({ prompt: grokQuestion }),
       })
 
-      console.log("[v0] Response received:", {
-        status: res.status,
-        statusText: res.statusText,
-        ok: res.ok,
-        headers: Object.fromEntries(res.headers.entries()),
-      })
-
       if (!res.ok) {
+        if (res.status === 429) {
+          const errorData = await res.json()
+          setGrokResponse(
+            errorData.message ||
+              "I'm experiencing high demand right now. Please try again in a few moments. If this persists, please contact cloudsns@outlook.com.",
+          )
+          return
+        }
+
         const errorText = await res.text()
-        console.error("[v0] Error response:", errorText)
         throw new Error(`Failed to get response: ${res.status} ${errorText}`)
       }
 
-      console.log("[v0] Starting to read stream")
       const reader = res.body?.getReader()
       const decoder = new TextDecoder()
       let fullResponse = ""
 
       if (reader) {
-        let chunkCount = 0
         while (true) {
           const { done, value } = await reader.read()
-          chunkCount++
-          console.log("[v0] Chunk", chunkCount, "received, done:", done)
 
           if (done) {
-            console.log("[v0] Stream complete, total chunks:", chunkCount)
             break
           }
 
           const chunk = decoder.decode(value, { stream: true })
-          console.log("[v0] Chunk content length:", chunk.length)
           fullResponse += chunk
           setGrokResponse(fullResponse)
         }
-        console.log("[v0] Final response length:", fullResponse.length)
-      } else {
-        console.error("[v0] No reader available from response body")
       }
     } catch (error) {
       console.error("[v0] Error in handleGrokSubmit:", error)
-      console.error("[v0] Error details:", {
-        name: error instanceof Error ? error.name : "Unknown",
-        message: error instanceof Error ? error.message : "Unknown error",
-        stack: error instanceof Error ? error.stack : "No stack trace",
-      })
-      const errorMessage = "Sorry, I'm having trouble responding right now. Please try again later."
+      const errorMessage =
+        "Sorry, I'm having trouble responding right now. This might be due to high demand or a temporary service issue. Please try again in a few moments, or contact cloudsns@outlook.com for assistance."
       setGrokResponse(errorMessage)
     } finally {
       setIsGrokLoading(false)
-      console.log("[v0] Grok submit complete")
     }
   }
 
