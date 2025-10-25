@@ -75,6 +75,10 @@ export default function Home() {
     e.preventDefault()
     if (!grokQuestion.trim()) return
 
+    console.log("[v0] Grok submit - question:", grokQuestion)
+    console.log("[v0] Grok submit - isGrokLoading:", isGrokLoading)
+    // </CHANGE>
+
     setIsGrokLoading(true)
     setGrokResponse("")
 
@@ -303,7 +307,7 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={isGrokLoading || !grokQuestion.trim()}
-                    className="rounded bg-purple-600 px-5 py-3 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded bg-purple-600 px-5 py-3 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700"
                   >
                     {isGrokLoading ? "Eliza is thinking..." : "Ask Eliza"}
                   </button>
