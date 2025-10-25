@@ -11,6 +11,9 @@ export default function Home() {
   const [grokResponse, setGrokResponse] = useState("")
   const [isGrokLoading, setIsGrokLoading] = useState(false)
   const [showTherapyAppsModal, setShowTherapyAppsModal] = useState(false)
+  const [isTTSEnabled, setIsTTSEnabled] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  // </CHANGE>
 
   const chatTextareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -19,6 +22,44 @@ export default function Home() {
       chatTextareaRef.current.focus()
     }
   }, [showGrokChat])
+
+  const speakText = (text: string) => {
+    if (!isTTSEnabled || !text) return
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel()
+
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.rate = 0.9 // Slightly slower for better clarity
+    utterance.pitch = 1.0
+    utterance.volume = 1.0
+
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend = () => setIsSpeaking(false)
+    utterance.onerror = () => setIsSpeaking(false)
+
+    window.speechSynthesis.speak(utterance)
+  }
+
+  const stopSpeaking = () => {
+    window.speechSynthesis.cancel()
+    setIsSpeaking(false)
+  }
+
+  // Speak the response when it's complete and TTS is enabled
+  useEffect(() => {
+    if (isTTSEnabled && grokResponse && !isGrokLoading) {
+      speakText(grokResponse)
+    }
+  }, [grokResponse, isGrokLoading, isTTSEnabled])
+
+  // Stop speaking when TTS is disabled
+  useEffect(() => {
+    if (!isTTSEnabled) {
+      stopSpeaking()
+    }
+  }, [isTTSEnabled])
+  // </CHANGE>
 
   const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -75,12 +116,15 @@ export default function Home() {
     e.preventDefault()
     if (!grokQuestion.trim()) return
 
-    console.log("[v0] Grok submit - question:", grokQuestion)
-    console.log("[v0] Grok submit - isGrokLoading:", isGrokLoading)
+    stopSpeaking()
     // </CHANGE>
 
     setIsGrokLoading(true)
     setGrokResponse("")
+
+    console.log("[v0] Grok submit - question:", grokQuestion)
+    console.log("[v0] Grok submit - isGrokLoading:", isGrokLoading)
+    // </CHANGE>
 
     try {
       const res = await fetch("/api/ask-eliza", {
@@ -292,6 +336,57 @@ export default function Home() {
             {showGrokChat && (
               <div className="mt-6 border rounded-lg p-4 bg-white">
                 <h3 className="font-bold text-xl mb-4">Chat with Eliza AI</h3>
+                <div className="mb-4 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsTTSEnabled(!isTTSEnabled)}
+                    className={`flex items-center gap-2 rounded px-4 py-2 text-sm font-medium transition-colors ${
+                      isTTSEnabled
+                        ? "bg-purple-600 text-white hover:bg-purple-700"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"
+                      />
+                    </svg>
+                    {isTTSEnabled ? "Voice On" : "Voice Off"}
+                  </button>
+                  {isSpeaking && (
+                    <button
+                      type="button"
+                      onClick={stopSpeaking}
+                      className="flex items-center gap-2 rounded px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z"
+                        />
+                      </svg>
+                      Stop
+                    </button>
+                  )}
+                </div>
+                {/* </CHANGE> */}
                 <form onSubmit={handleGrokSubmit} className="space-y-4">
                   <div>
                     <textarea
