@@ -13,15 +13,62 @@ export default function Home() {
   const [showTherapyAppsModal, setShowTherapyAppsModal] = useState(false)
   const [isTTSEnabled, setIsTTSEnabled] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const [recognition, setRecognition] = useState<any>(null)
   // </CHANGE>
 
   const chatTextareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      if (SpeechRecognition) {
+        const recognitionInstance = new SpeechRecognition()
+        recognitionInstance.continuous = false
+        recognitionInstance.interimResults = false
+        recognitionInstance.lang = "en-US"
+
+        recognitionInstance.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript
+          setGrokQuestion((prev) => (prev ? prev + " " + transcript : transcript))
+        }
+
+        recognitionInstance.onend = () => {
+          setIsListening(false)
+        }
+
+        recognitionInstance.onerror = (event: any) => {
+          console.error("[v0] Speech recognition error:", event.error)
+          setIsListening(false)
+        }
+
+        setRecognition(recognitionInstance)
+      }
+    }
+  }, [])
+  // </CHANGE>
 
   useEffect(() => {
     if (showGrokChat && chatTextareaRef.current) {
       chatTextareaRef.current.focus()
     }
   }, [showGrokChat])
+
+  const toggleListening = () => {
+    if (!recognition) {
+      alert("Speech recognition is not supported in your browser. Please try Chrome or Edge.")
+      return
+    }
+
+    if (isListening) {
+      recognition.stop()
+      setIsListening(false)
+    } else {
+      recognition.start()
+      setIsListening(true)
+    }
+  }
+  // </CHANGE>
 
   const speakText = (text: string) => {
     if (!isTTSEnabled || !text) return
@@ -59,7 +106,6 @@ export default function Home() {
       stopSpeaking()
     }
   }, [isTTSEnabled])
-  // </CHANGE>
 
   const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -334,7 +380,7 @@ export default function Home() {
             {showGrokChat && (
               <div className="mt-6 border rounded-lg p-4 bg-white">
                 <h3 className="font-bold text-xl mb-4">Chat with Eliza AI</h3>
-                <div className="mb-4 flex items-center gap-3">
+                <div className="mb-4 flex items-center gap-3 flex-wrap">
                   <button
                     type="button"
                     onClick={() => setIsTTSEnabled(!isTTSEnabled)}
@@ -383,8 +429,34 @@ export default function Home() {
                       Stop
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={toggleListening}
+                    disabled={isGrokLoading}
+                    className={`flex items-center gap-2 rounded px-4 py-2 text-sm font-medium transition-colors ${
+                      isListening
+                        ? "bg-red-600 text-white hover:bg-red-700 animate-pulse"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"
+                      />
+                    </svg>
+                    {isListening ? "Listening..." : "Speak"}
+                  </button>
+                  {/* </CHANGE> */}
                 </div>
-                {/* </CHANGE> */}
                 <form onSubmit={handleGrokSubmit} className="space-y-4">
                   <div>
                     <textarea
