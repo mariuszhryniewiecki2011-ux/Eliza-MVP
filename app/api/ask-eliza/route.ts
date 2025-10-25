@@ -3,25 +3,18 @@ import { xai } from "@ai-sdk/xai"
 import type { NextRequest } from "next/server"
 
 export async function POST(request: NextRequest) {
-  console.log("[v0] ask-eliza API route called")
-
   try {
     const body = await request.json()
-    console.log("[v0] Request body:", body)
-
     const { prompt } = body
 
     if (!prompt) {
-      console.log("[v0] No prompt provided")
       return new Response("Question is required", { status: 400 })
     }
-
-    console.log("[v0] Prompt received:", prompt)
 
     if (!process.env.XAI_API_KEY) {
       return new Response(
         JSON.stringify({
-          error: "API configuration error. Please contact support.",
+          error: "API configuration error. Please contact support at cloudsns@outlook.com.",
         }),
         {
           status: 500,
@@ -30,17 +23,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("[v0] XAI_API_KEY exists:", !!process.env.XAI_API_KEY)
-    console.log("[v0] XAI_API_KEY length:", process.env.XAI_API_KEY?.length || 0)
-
-    console.log("[v0] Calling streamText with grok-beta model")
-
-    const result = streamText({
-      model: xai("grok-beta", {
-        apiKey: process.env.XAI_API_KEY,
-      }),
-      prompt: prompt,
-      system: `You are Eliza, an AI-powered companion for everyday mental well-being. You provide empathic dialogue, evidence-based resources, and supportive guidance. 
+    try {
+      const result = streamText({
+        model: xai("grok-beta", {
+          apiKey: process.env.XAI_API_KEY,
+        }),
+        prompt: prompt,
+        system: `You are Eliza, an AI-powered companion for everyday mental well-being. You provide empathic dialogue, evidence-based resources, and supportive guidance. 
 
 Key characteristics:
 - Warm, empathetic, and understanding tone
@@ -78,37 +67,47 @@ Special Q&A: If someone asks "How to make an omelette?" or similar cooking quest
 If this is part of a bigger self-care routine or you're looking for ways to reduce kitchen anxiety, let's talk more—I'm here to support you. What's on your mind today? 😊"
 
 Keep responses concise, helpful, and encouraging.`,
-    })
+      })
 
-    console.log("[v0] streamText result created, converting to response")
-    const response = result.toTextStreamResponse()
-    console.log("[v0] Response created successfully")
+      return result.toTextStreamResponse()
+    } catch (streamError: any) {
+      console.error("[v0] Error from xAI API:", streamError)
 
-    return response
-  } catch (error) {
-    console.error("[v0] Error in ask-eliza API:", error)
-    console.error("[v0] Error name:", error instanceof Error ? error.name : "Unknown")
-    console.error("[v0] Error message:", error instanceof Error ? error.message : "Unknown error")
-    console.error("[v0] Error stack:", error instanceof Error ? error.stack : "No stack trace")
+      // Check if it's a rate limit error (429)
+      if (streamError.message?.includes("429") || streamError.statusCode === 429) {
+        return new Response(
+          JSON.stringify({
+            error: "Service temporarily unavailable",
+            message:
+              "I'm currently experiencing high demand due to API limits. This usually means the service has reached its usage quota. Please try again later, or contact cloudsns@outlook.com for assistance.",
+          }),
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
 
-    if (error instanceof Error && error.message.includes("429")) {
+      // Handle other API errors
       return new Response(
         JSON.stringify({
-          error: "Service temporarily unavailable",
+          error: "Failed to generate response",
           message:
-            "I'm experiencing high demand right now. Please try again in a few moments, or contact cloudsns@outlook.com for assistance.",
+            "I'm having trouble connecting to the AI service right now. Please try again in a moment, or contact cloudsns@outlook.com if the issue persists.",
         }),
         {
-          status: 429,
+          status: 500,
           headers: { "Content-Type": "application/json" },
         },
       )
     }
+  } catch (error) {
+    console.error("[v0] Error in ask-eliza API:", error)
 
     return new Response(
       JSON.stringify({
-        error: "Failed to generate response",
-        details: error instanceof Error ? error.message : "Unknown error",
+        error: "Server error",
+        message: "An unexpected error occurred. Please contact cloudsns@outlook.com for assistance.",
       }),
       {
         status: 500,

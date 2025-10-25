@@ -88,17 +88,21 @@ export default function Home() {
       })
 
       if (!res.ok) {
-        if (res.status === 429) {
-          const errorData = await res.json()
+        const errorData = await res.json().catch(() => ({ error: "Unknown error" }))
+
+        if (res.status === 503 || res.status === 429) {
           setGrokResponse(
             errorData.message ||
-              "I'm experiencing high demand right now. Please try again in a few moments. If this persists, please contact cloudsns@outlook.com.",
+              "I'm currently experiencing high demand due to API limits. The xAI service has reached its usage quota. Please try again later, or contact cloudsns@outlook.com for assistance.",
           )
           return
         }
 
-        const errorText = await res.text()
-        throw new Error(`Failed to get response: ${res.status} ${errorText}`)
+        setGrokResponse(
+          errorData.message ||
+            "I'm having trouble responding right now. Please try again in a few moments, or contact cloudsns@outlook.com for assistance.",
+        )
+        return
       }
 
       const reader = res.body?.getReader()
@@ -121,7 +125,7 @@ export default function Home() {
     } catch (error) {
       console.error("[v0] Error in handleGrokSubmit:", error)
       const errorMessage =
-        "Sorry, I'm having trouble responding right now. This might be due to high demand or a temporary service issue. Please try again in a few moments, or contact cloudsns@outlook.com for assistance."
+        "Sorry, I'm having trouble responding right now. This might be due to a network issue or the AI service being temporarily unavailable. Please try again in a few moments, or contact cloudsns@outlook.com for assistance."
       setGrokResponse(errorMessage)
     } finally {
       setIsGrokLoading(false)
