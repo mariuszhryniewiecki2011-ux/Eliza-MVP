@@ -35,7 +35,18 @@ export default function Home() {
 
         recognitionInstance.onend = () => {
           setIsListening(false)
+          // Auto-submit if there's text in the question field
+          setTimeout(() => {
+            if (grokQuestion.trim()) {
+              // Trigger form submission
+              const form = document.querySelector("form[data-eliza-form]") as HTMLFormElement
+              if (form) {
+                form.requestSubmit()
+              }
+            }
+          }, 500) // Small delay to ensure state is updated
         }
+        // </CHANGE>
 
         recognitionInstance.onerror = (event: any) => {
           console.error("[v0] Speech recognition error:", event.error)
@@ -45,7 +56,7 @@ export default function Home() {
         setRecognition(recognitionInstance)
       }
     }
-  }, [])
+  }, [grokQuestion])
   // </CHANGE>
 
   useEffect(() => {
@@ -457,7 +468,7 @@ export default function Home() {
                   </button>
                   {/* </CHANGE> */}
                 </div>
-                <form onSubmit={handleGrokSubmit} className="space-y-4">
+                <form onSubmit={handleGrokSubmit} className="space-y-4" data-eliza-form>
                   <div>
                     <textarea
                       ref={chatTextareaRef}
