@@ -117,14 +117,12 @@ export default function Home() {
     if (!grokQuestion.trim()) return
 
     stopSpeaking()
-    // </CHANGE>
 
     setIsGrokLoading(true)
     setGrokResponse("")
 
     console.log("[v0] Grok submit - question:", grokQuestion)
     console.log("[v0] Grok submit - isGrokLoading:", isGrokLoading)
-    // </CHANGE>
 
     try {
       const res = await fetch("/api/ask-eliza", {
